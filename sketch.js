@@ -3,9 +3,13 @@ let radianUnit;
 let dgreesUnit;
 let originX;
 let originY;
-let showGrid = false;
+let showGrid = true;
 let myFont;
 let theta = 0;
+
+let waveHight = 100.0; // Height of wave
+let waveX = 0.0;
+let waveBuffer = [];
 
 function preload() {
   myFont = loadFont("assets/CrimsonText-Regular.ttf");
@@ -25,6 +29,7 @@ function setup() {
 
 function draw() {
   createGrid(showGrid);
+  // renderWave();
 }
 
 function createGrid(showSubGrid) {
@@ -39,7 +44,7 @@ function createGrid(showSubGrid) {
   strokeWeight(0);
   textFont(myFont);
   textSize(30);
-  text("y", originX + 15, 0 + 30);
+  text("y", originX - 30, 0 + 30);
 
   strokeWeight(2);
   stroke("rgb(38.5%, 67.8%, 85.1%)");
@@ -59,14 +64,9 @@ function createGrid(showSubGrid) {
   textSize(30);
   text("x", windowWidth - 30, originY + 30);
 
-  let mainRadius = unit * 2.5;
-  let textOffsetX = 10;
-  let textOffsetY = 30;
   stroke(240);
   strokeWeight(7);
   fill("rgb(0%, 0%, 0%)");
-  text("1", originX + mainRadius + textOffsetX, originY + textOffsetY);
-  text("-1", originX - mainRadius - textOffsetX - 20, originY + textOffsetY);
 
   if (showSubGrid) {
     strokeWeight(1);
@@ -99,24 +99,32 @@ let heightX;
 let widthY;
 function createUnitCircle() {
   let radian = theta * -radianUnit;
-  fill("rgba(0, 0, 0, 0)");
-  strokeWeight(2);
-  stroke("black");
-  circle(originX, originY, mainRadius * 2);
-
   heightX = mainRadius * cos(radian);
   widthY = mainRadius * sin(radian);
   let vecX = originX + mainRadius * cos(radian);
   let vecY = originY + mainRadius * sin(radian);
+
+  fill("rgba(0, 0, 0, 0)");
+  strokeWeight(2);
+  stroke("black");
+  drawingContext.setLineDash([5, 5]);
+  line(vecX, originY, vecX, vecY);
+  line(originX, vecY, vecX, vecY);
+  drawingContext.setLineDash([1, 1]);
+
+  circle(originX, originY, mainRadius * 2);
+
   line(originX, originY, vecX, vecY);
-  triangle(originX, originY, vecX, vecY, vecX, originY);
+  line(originX - mainRadius, originY, originX + mainRadius, originY);
+  line(originX, originY - mainRadius, originX, originY + mainRadius);
+  // triangle(originX, originY, vecX, vecY, vecX, originY);
   arc(originX, originY, subRadius, subRadius, radian, 0);
 
   strokeWeight(8);
   stroke("rgb(95.6%, 25.7%, 26%)");
   point(originX, originY);
   point(vecX, vecY);
-  point(vecX, originY);
+  // point(vecX, originY);
 
   strokeWeight(7);
   stroke(240);
@@ -127,6 +135,19 @@ function createUnitCircle() {
     originX + (subRadius - 8) * cos(radian / 2) - 7,
     originY + (subRadius - 8) * sin(radian / 2) + 10
   );
+
+  let textOffsetX = 10;
+  let textOffsetY = 30;
+  text("1", originX + mainRadius + textOffsetX, originY + textOffsetY);
+  text("-1", originX - mainRadius - textOffsetX - 20, originY + textOffsetY);
+
+  let isSwitchSin =
+    (0 <= theta && theta <= 90) || (theta <= 360 && 270 <= theta);
+
+  text("sin θ", originX + (isSwitchSin ? -70 : 10), vecY + 5);
+
+  let isSwitchCos = 0 <= theta && theta <= 180;
+  text("cos θ", vecX - 20, originY + (isSwitchCos ? 25 : -20));
 }
 
 function createNativeSlider() {
@@ -196,28 +217,7 @@ function updateThetaField() {
   thetaValue.value = theta + "°";
 
   let radian = theta * radianUnit;
-  circleInfo.innerHTML =
-    "<ul>" +
-    "<li>$sin" +
-    theta +
-    "°=" +
-    "\\frac{" +
-    "1" +
-    "}{" +
-    heightX +
-    "}" +
-    "$</li>" +
-    "<li>$cos" +
-    theta +
-    "°=" +
-    Math.cos(radian) +
-    "$</li>" +
-    "<li>$tan" +
-    theta +
-    "°=" +
-    Math.tan(radian) +
-    "$</li>" +
-    "</ul>"; //改行されないからそれを直す
+  circleInfo.innerHTML = setTriangularRatio(radian);
   MathJax.typeset();
 }
 
@@ -227,27 +227,102 @@ function updateSlider() {
   thetaValue.value = theta + "°";
 
   let radian = theta * radianUnit;
-  circleInfo.innerHTML =
-    "<ul>" +
-    "<li>$sin" +
-    theta +
-    "°=" +
-    "\\frac{" +
-    "1" +
-    "}{" +
-    heightX +
-    "}" +
-    "$</li>" +
-    "<li>$cos" +
-    theta +
-    "°=" +
-    Math.cos(radian) +
-    "$</li>" +
-    "<li>$tan" +
-    theta +
-    "°=" +
-    Math.tan(radian) +
-    "$</li>" +
-    "</ul>"; //改行されないからそれを直す
+  circleInfo.innerHTML = setTriangularRatio(radian);
   MathJax.typeset();
+}
+
+let sinDegrees = {
+  0: "0",
+  30: "\\frac{1}{2}",
+  45: "\\frac{1}{\\sqrt{2}}",
+  60: "\\frac{\\sqrt{3}}{2}",
+  90: "1",
+  120: "\\frac{\\sqrt{3}}{2}",
+  135: "\\frac{1}{\\sqrt{2}}",
+  150: "\\frac{1}{2}",
+  180: "0",
+  360: "0",
+};
+
+let cosDegrees = {
+  0: "1",
+  30: "\\frac{\\sqrt{3}}{2}",
+  45: "\\frac{1}{\\sqrt{2}}",
+  60: "\\frac{1}{2}",
+  90: "0",
+  120: "-\\frac{1}{2}",
+  135: "-\\frac{1}{\\sqrt{2}}",
+  150: "-\\frac{\\sqrt{3}}{2}",
+  180: "-1",
+  360: "1",
+};
+
+let tanDegrees = {
+  0: "0",
+  30: "\\frac{1}{\\sqrt{3}}",
+  45: "1",
+  60: "\\sqrt{3}",
+  90: "NaN",
+  120: "-\\sqrt{3}",
+  135: "-1",
+  150: "-\\frac{1}{\\sqrt{3}}",
+  180: "0",
+  360: "0",
+};
+
+function setTriangularRatio(rad) {
+  let tmpInner, tmpSin, tmpCos, tmpTan;
+
+  if (sinDegrees[theta] || theta == 360) {
+    tmpSin = "<li>$sin" + theta + "°=" + sinDegrees[theta] + "$</li>";
+  } else if (sinDegrees[theta - 180]) {
+    tmpSin =
+      "<li>$sin" + theta + "°=" + "-" + sinDegrees[theta - 180] + "$</li>";
+  } else {
+    tmpSin =
+      "<li>$sin" +
+      theta +
+      "°=" +
+      Math.floor(Math.sin(rad) * 400) / 400 +
+      "$</li>";
+  }
+
+  if (cosDegrees[theta] || theta == 360) {
+    tmpCos = "<li>$cos" + theta + "°=" + cosDegrees[theta] + "$</li>";
+  } else if (cosDegrees[theta - 180]) {
+    tmpCos =
+      "<li>$cos" + theta + "°=" + "-" + cosDegrees[theta - 180] + "$</li>";
+  } else {
+    tmpCos =
+      "<li>$cos" +
+      theta +
+      "°=" +
+      Math.floor(Math.cos(rad) * 400) / 400 +
+      "$</li>";
+  }
+
+  if (tanDegrees[theta] || theta == 360) {
+    tmpTan = "<li>$tan" + theta + "°=" + tanDegrees[theta] + "$</li>";
+  } else if (tanDegrees[theta - 180]) {
+    tmpTan = "<li>$tan" + theta + "°=" + tanDegrees[theta - 180] + "$</li>";
+  } else {
+    tmpTan =
+      "<li>$tan" +
+      theta +
+      "°=" +
+      Math.floor(Math.tan(rad) * 400) / 400 +
+      "$</li>";
+  }
+
+  return (tmpInner = "<ul>" + tmpSin + tmpCos + tmpTan + "</ul>");
+}
+
+function renderWave() {
+  stroke("black");
+  strokeWeight(4);
+
+  theta += 1;
+  waveX += 1;
+  point(waveX + originX, tan(theta * radianUnit) * waveHight + originY);
+  point(-waveX + originX, tan(-theta * radianUnit) * waveHight + originY);
 }
