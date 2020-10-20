@@ -3,13 +3,16 @@ let radianUnit;
 let dgreesUnit;
 let originX;
 let originY;
-let showGrid = true;
+let showGrid = false;
 let myFont;
 let theta = 0;
 
-let waveHight = 100.0; // Height of wave
-let waveX = 0.0;
-let waveBuffer = [];
+const waveHight = 100.0; // Height of wave
+const calcWaveCount = 5;
+let waveBufferX1 = [];
+let waveBufferY1 = [];
+let waveBufferX2 = [];
+let waveBufferY2 = [];
 
 function preload() {
   myFont = loadFont("assets/CrimsonText-Regular.ttf");
@@ -24,12 +27,13 @@ function setup() {
   originX = windowWidth / 2;
   originY = windowHeight / 2;
 
+  // calcWave();
   createNativeSlider();
 }
 
 function draw() {
   createGrid(showGrid);
-  // renderWave();
+  renderWave();
 }
 
 function createGrid(showSubGrid) {
@@ -317,12 +321,40 @@ function setTriangularRatio(rad) {
   return (tmpInner = "<ul>" + tmpSin + tmpCos + tmpTan + "</ul>");
 }
 
+function calcWave() {
+  let waveX = 0.0;
+  let calcRange = 180 * calcWaveCount;
+  while (theta < calcRange) {
+    theta += 1.8;
+    waveX += 2;
+
+    waveBufferX1.push(waveX + originX);
+    waveBufferX2.push(-waveX + originX);
+    waveBufferY1.push(sin(theta * radianUnit) * waveHight + originY);
+    waveBufferY2.push(sin(-theta * radianUnit) * waveHight + originY);
+  }
+}
+
+let index = 0;
 function renderWave() {
   stroke("black");
-  strokeWeight(4);
+  strokeWeight(1.5);
 
-  theta += 1;
-  waveX += 1;
-  point(waveX + originX, tan(theta * radianUnit) * waveHight + originY);
-  point(-waveX + originX, tan(-theta * radianUnit) * waveHight + originY);
+  index++;
+  for (let i = 0; i < index; i++) {
+    line(
+      waveBufferX1[i],
+      waveBufferY1[i],
+      waveBufferX1[i + 1],
+      waveBufferY1[i + 1]
+    );
+    // ellipse(waveBufferX1[i], waveBufferY1[i], 0.5, 0.5);
+    line(
+      waveBufferX2[i],
+      waveBufferY2[i],
+      waveBufferX2[i + 1],
+      waveBufferY2[i + 1]
+    );
+    // ellipse(waveBufferX2[i], waveBufferY2[i], 0.5, 0.5);
+  }
 }
